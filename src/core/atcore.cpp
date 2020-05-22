@@ -104,6 +104,10 @@ AtCore::AtCore(QObject *parent)
     : QObject(parent)
     , d(new AtCorePrivate)
 {
+    m_serverpart  = new ServerPart(this);
+    m_serverpart->startserver();
+    //connect the server to push command to the serial port 
+    connect(m_serverpart, &ServerPart::gotNewCommand, this, &AtCore::pushCommand);
     d->temperature.reset(new Temperature);
     d->bedDeform.reset(new BedDeform);
     // Register MetaTypes

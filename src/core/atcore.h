@@ -33,6 +33,7 @@
 #include "beddeform.h"
 #include "ifirmware.h"
 #include "temperature.h"
+#include "serverpart.h"
 
 class SerialLayer;
 class IFirmware;
@@ -63,7 +64,7 @@ class ATCORE_EXPORT AtCore : public QObject
     Q_PROPERTY(QString version READ version CONSTANT)
     Q_PROPERTY(QStringList availableFirmwarePlugins READ availableFirmwarePlugins NOTIFY availableFirmwarePluginsChanged)
     Q_PROPERTY(int extruderCount READ extruderCount WRITE setExtruderCount NOTIFY extruderCountChanged)
-    Q_PROPERTY(int temperatureTimerInterval READ temperatureTimerInterval WRITE setTemperatureTimerInterval NOTIFY temperatureTimerIntervalChanged);
+    Q_PROPERTY(int temperatureTimerInterval READ temperatureTimerInterval WRITE setTemperatureTimerInterval NOTIFY temperatureTimerIntervalChanged)
     Q_PROPERTY(int serialTimerInterval READ serialTimerInterval WRITE setSerialTimerInterval NOTIFY serialTimerIntervalChanged)
     Q_PROPERTY(QStringList serialPorts READ serialPorts NOTIFY portsChanged)
     Q_PROPERTY(float percentagePrinted READ percentagePrinted NOTIFY printProgressChanged)
@@ -85,6 +86,9 @@ class ATCORE_EXPORT AtCore : public QObject
     // friend class SprinterPlugin;
 
 public:
+
+    ServerPart *m_serverpart = nullptr;
+
     /**
      * @brief STATES enum Possible states the printer can be in
      */
@@ -110,7 +114,7 @@ public:
         E = 1 << 3, //!< E Axis: Extruder Motor 0
     };
     Q_ENUM(AXES)
-    /**
+    /**ser
      * @brief The UNITS enum - Possible Mesurment Units
      */
     enum UNITS {

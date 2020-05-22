@@ -8,6 +8,7 @@ configure_file(
 
 find_package(Qt5 REQUIRED COMPONENTS
     Quick
+    Network
 )
 
 set(AtCoreLib_SRCS
@@ -18,11 +19,12 @@ set(AtCoreLib_SRCS
     machineinfo.cpp
     printthread.cpp
     seriallayer.cpp   
-    temperature.cpp    
+    temperature.cpp
+    serverpart.cpp
 )
 
 add_library(AtCore SHARED ${AtCoreLib_SRCS})
-target_link_libraries(AtCore Qt5::Core Qt5::SerialPort Qt5::Quick)
+target_link_libraries(AtCore Qt5::Core Qt5::SerialPort Qt5::Quick Qt5::Network)
 
 #
 #
@@ -49,6 +51,7 @@ ecm_generate_headers(ATCORE_CamelCase_HEADERS
     MachineInfo
     SerialLayer
     Temperature
+    Serverpart
     REQUIRED_HEADERS ATCORE_HEADERS
 )
 
