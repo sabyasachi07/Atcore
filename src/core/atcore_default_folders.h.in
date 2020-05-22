@@ -1,0 +1,40 @@
+/* AtCore KDE Libary for 3D Printers
+    Copyright (C) <2016>
+    
+    Authors:
+        Tomaz Canabrava <tcanabrava@kde.org>
+        Chris Rizzitello <rizzitello@kde.org>
+        Patrick José Pereira <patrickjp@kde.org>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+#pragma once
+
+#include <QLibraryInfo>
+
+namespace AtCoreDirectories {
+    const QStringList pluginDir = {
+        QStringLiteral("@CMAKE_INSTALL_PREFIX@/@KDE_INSTALL_PLUGINDIR@/AtCore")
+        , QLibraryInfo::location(QLibraryInfo::PluginsPath) + QStringLiteral("/AtCore")
+        , QStringLiteral("@KDE_INSTALL_PLUGINDIR@/AtCore")
+        , QStringLiteral("@CMAKE_CURRENT_BINARY_DIR@/../plugins")
+    };
+    const QString pluginExtFilter =
+        #if defined(Q_OS_WIN)
+            QStringLiteral("*.dll");
+        #elif defined(Q_OS_MAC)
+            QStringLiteral("*.dylib");
+        #else
+            QStringLiteral("*.so");
+        #endif
+}
