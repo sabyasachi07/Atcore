@@ -21,6 +21,7 @@ set(AtCoreLib_SRCS
     seriallayer.cpp   
     temperature.cpp
     serverpart.cpp
+    clientstuff.cpp
 )
 
 add_library(AtCore SHARED ${AtCoreLib_SRCS})
@@ -52,6 +53,7 @@ ecm_generate_headers(ATCORE_CamelCase_HEADERS
     SerialLayer
     Temperature
     Serverpart
+    Clientstuff
     REQUIRED_HEADERS ATCORE_HEADERS
 )
 
