@@ -46,19 +46,20 @@ ServerPart::ServerPart(QObject *parent):QTcpServer(parent),m_nNextBlockSize(0)
     cert = QSslCertificate(certFile.readAll());
     certFile.close();
 
-    if (!listen(QHostAddress::Any,32887)){
-        qCDebug(ATCORE_SERVER) << "Unable to start the TCP server";
-        exit(0);
-    }
-    else
-    {
-        qCDebug(ATCORE_SERVER) << "Listening on " << serverAddress() << ":" << serverPort();
-    }
-    connect(this, &ServerPart::newConnection , this , &ServerPart::link);
-
 
 }
 
+void ServerPart::startserver()
+{
+    
+    if (!listen(QHostAddress::Any, 38917)){
+        qCDebug(ATCORE_SERVER) << "Unable to start the TCP server";
+        exit(0);
+    }
+    connect(this, &ServerPart::newConnection , this , &ServerPart::link);
+    qCDebug(ATCORE_SERVER) << "Listening on " << serverAddress() << ":" << serverPort();    
+    
+}
 
 void ServerPart::incomingConnection(qintptr sslSocketDescriptor)
 {

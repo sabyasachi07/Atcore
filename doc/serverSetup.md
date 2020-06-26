@@ -1,5 +1,5 @@
 
-# Creating  Server Part for AtCore
+# Creating  Server Certificate/Key for AtCore
  - First , you have to install [openSSL] in you distro.
  - To check it is perfectly installed or not check openssl version.
 
@@ -26,6 +26,9 @@ NOTE:- The number "1024" in the above command indicates the size of the  key.
 
 ## To create  available files in .pem format 
  - if you followed the above steps and want the above created files in .pem format click [here].
+
+# Creating  Client Certificate/Key for AtCore
+ - The process for creating client certificate/key is same as server with a little modification the FQDN for client could be any IP address/host name  except you given in server FQDN.
 
 
 [Qt]:https://www.qt.io
