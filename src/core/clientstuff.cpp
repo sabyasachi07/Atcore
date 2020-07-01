@@ -53,12 +53,21 @@ void ClientStuff::connectToHost()
     if (server->waitForEncrypted(5000)) {
 
        qCDebug(ATCORE_CLIENT) << (tr(" connected to server"));
+       status = true;
 
     } else {
         qCDebug(ATCORE_CLIENT) << (tr("Unable to connect to server"));
+        status = false;
+
         exit(0);
     }
 }
+
+bool ClientStuff::getStatus()
+{
+    return status;
+}
+
 void ClientStuff ::encrypted()
 {
     qCDebug(ATCORE_CLIENT) << tr("Encrypted") <<server;
@@ -90,6 +99,8 @@ void ClientStuff::serverDisconnect()
 
 void ClientStuff::sendCommand(const QString &comm)
 {
+
+
     QByteArray arrBlock;
     QDataStream out(&arrBlock, QIODevice::WriteOnly);
 

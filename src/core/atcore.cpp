@@ -104,10 +104,7 @@ AtCore::AtCore(QObject *parent)
     : QObject(parent)
     , d(new AtCorePrivate)
 {
-    m_serverpart  = new ServerPart(this);
-    m_serverpart->startserver();
-    //connect the server to push command to the serial port 
-    connect(m_serverpart, &ServerPart::gotNewCommand, this, &AtCore::pushCommand);
+
     d->temperature.reset(new Temperature);
     d->bedDeform.reset(new BedDeform);
     // Register MetaTypes
@@ -312,6 +309,7 @@ QStringList AtCore::serialPorts() const
         }
     }
     return ports;
+
 }
 
 void AtCore::locateSerialPort()
@@ -392,6 +390,7 @@ bool AtCore::autoTemperatureReport() const
 {
     return d->autoTemperatureReport;
 }
+
 
 void AtCore::newMessage(const QByteArray &message)
 {
@@ -477,6 +476,9 @@ void AtCore::print(const QString &fileName, bool sdPrint)
     }
 }
 
+
+
+
 void AtCore::pushCommand(const QString &comm)
 {
     // Be sure our M112 is first in the queue.
@@ -489,7 +491,11 @@ void AtCore::pushCommand(const QString &comm)
         // The printer is ready for a command now so push one.
         processQueue();
     }
+
+    emit commandToclient(comm);
+
 }
+
 
 void AtCore::closeConnection()
 {
@@ -747,6 +753,9 @@ void AtCore::setExtruderCount(int newCount)
         qCDebug(ATCORE_CORE) << "Extruder Count:" << QString::number(extruderCount());
     }
 }
+
+
+
 void AtCore::processQueue()
 {
     d->ready = true;
@@ -762,6 +771,7 @@ void AtCore::processQueue()
 
     d->lastCommand = d->commandQueue.takeAt(0);
 
+
     if (firmwarePluginLoaded()) {
         d->serial->pushCommand(firmwarePlugin()->translate(d->lastCommand));
     } else {
@@ -769,6 +779,9 @@ void AtCore::processQueue()
     }
     d->ready = false;
 }
+
+
+
 
 void AtCore::checkTemperature()
 {

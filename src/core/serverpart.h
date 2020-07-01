@@ -38,6 +38,9 @@ class  ATCORE_EXPORT ServerPart :public QTcpServer
 
 public:
   ServerPart(QObject *parent = nullptr);
+  bool connectionEstablished();
+  void closeConnection();
+
 
 
 signals :
@@ -47,13 +50,14 @@ public slots:
     void sslErrors(const QList<QSslError> &errors);
     void link();
     void readClient(QTcpSocket* m_clientSocket);
-    void disconnect(QTcpSocket* m_clientSocket);
+    void disconnectfromClient(QTcpSocket* m_clientSocket);
     void startserver();
 
 private:
     quint16 m_nNextBlockSize;
     QSslKey key;
     QSslCertificate cert;
+    bool status;
 
 protected:
     void incomingConnection(qintptr sslSocketDescriptor);

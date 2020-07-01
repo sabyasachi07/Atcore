@@ -41,6 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , core(new AtCore(this))
 {
+    client = new ClientStuff(this);
+    server = new ServerPart(this);
     setWindowTitle(tr("AtCore - Test Client"));
     setWindowIcon(QIcon(QStringLiteral(":/icon/windowIcon")));
     QCoreApplication::setApplicationVersion(core->version());
@@ -249,6 +251,9 @@ void MainWindow::makeLogDock()
 
 void MainWindow::makeConnectDock()
 {
+    
+
+    
     auto *mainLayout = new QVBoxLayout;
     auto *newLabel = new QLabel(tr("Port:"));
 
@@ -277,6 +282,16 @@ void MainWindow::makeConnectDock()
     profileLayout->addWidget(comboProfile);
     mainLayout->addLayout(profileLayout);
 
+    newLabel = new QLabel(tr("Connect To:"));
+    comboConnection = new QComboBox;
+    comboConnection->addItem(tr("local"));
+    comboConnection->addItem(tr("Host"));
+    comboConnection->addItem(tr("client"));
+    auto *HBoxLayout = new QHBoxLayout;
+    HBoxLayout->addWidget(newLabel);
+    HBoxLayout->addWidget(comboConnection, 75);
+    mainLayout->addLayout(HBoxLayout);
+
     cbReset = new QCheckBox(tr("Attempt to stop Reset on connect"));
     if (MachineInfo::instance()->profileNames().isEmpty()) {
         cbReset->setHidden(true);
@@ -290,7 +305,7 @@ void MainWindow::makeConnectDock()
     });
 
     buttonConnect = new QPushButton(tr("Connect"));
-    connect(buttonConnect, &QPushButton::clicked, this, &MainWindow::connectPBClicked);
+    connect(buttonConnect, &QPushButton::clicked, this, &MainWindow::connectionType);
 
     connectionTimer = new QTimer(this);
     connectionTimer->setInterval(20000);
@@ -304,7 +319,7 @@ void MainWindow::makeConnectDock()
 
     auto *dockContents = new QWidget;
     dockContents->setLayout(mainLayout);
-
+   
     connectDock = new QDockWidget(tr("Connect"), this);
     connectDock->setWidget(dockContents);
 
@@ -449,6 +464,37 @@ void MainWindow::checkTemperature(uint sensorType, uint number, float temp)
     msg.append(QString::fromLatin1(": %1").arg(QString::number(double(temp), 'f', 2)));
     logWidget->appendLog(msg);
 }
+
+void MainWindow::connectionType()
+{
+    if(comboConnection->currentText() == tr("local"))
+    {
+        connectPBClicked();
+    }
+    if(comboConnection->currentText() == tr("Host"))
+    {
+        client->connectToHost();
+        if(client->getStatus())
+        {
+            setDangeriousDocksDisabled(false);
+            connect( core , &AtCore::commandToclient , client , &ClientStuff::sendCommand);
+
+        }
+
+    }
+   if(comboConnection->currentText() == tr("client"))
+   {
+      if(server->connectionEstablished())
+      {
+          connectPBClicked();
+          connect(server , &ServerPart::gotNewCommand , core ,&AtCore::pushCommand);
+      }
+
+   }
+
+
+}
+
 /**
  * @brief MainWindow::locateSerialPort
  * Locate all active serial ports on the computer and add to the list
@@ -575,6 +621,7 @@ void MainWindow::printerStateChanged(AtCore::STATES state)
         buttonConnect->setText(tr("Connect"));
         setConnectionWidgetsEnabled(true);
         setDangeriousDocksDisabled(true);
+        server->closeConnection();
         break;
 
     case AtCore::CONNECTING:

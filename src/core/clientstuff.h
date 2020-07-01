@@ -36,10 +36,12 @@ public:
     void connectToHost();
     void sendCommand(const QString &comm);
     void closeConnection();
+    bool getStatus();
 
 
 private:
     QSslSocket *server;
+    bool status = false;
 
 
 private slots:

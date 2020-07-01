@@ -34,6 +34,7 @@
 #include "sdwidget.h"
 #include "statuswidget.h"
 #include "temperaturewidget.h"
+#include "clientstuff.h"
 
 class SerialLayer;
 
@@ -57,7 +58,7 @@ public slots:
 
 private slots:
     // ButtonEvents
-
+      void connectionType();
     /**
      * @brief Connect Button Clicked will connect or disconnect based on printer state
      */
@@ -101,6 +102,8 @@ private:
     AtCore *core;
     // Define max number of fans
     static int fanCount;
+    ClientStuff *client = nullptr;
+    ServerPart *server = nullptr;
 
     void closeEvent(QCloseEvent *event) override;
     /**
@@ -167,6 +170,7 @@ private:
     QDockWidget *connectDock = nullptr;
     QComboBox *comboPort = nullptr;
     QComboBox *comboProfile = nullptr;
+    QComboBox *comboConnection = nullptr;
     QPushButton *buttonConnect = nullptr;
     QCheckBox *cbReset = nullptr;
     QTimer *connectionTimer = nullptr;

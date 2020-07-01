@@ -66,16 +66,16 @@ class ATCORE_EXPORT AtCore : public QObject
     Q_PROPERTY(int extruderCount READ extruderCount WRITE setExtruderCount NOTIFY extruderCountChanged)
     Q_PROPERTY(int temperatureTimerInterval READ temperatureTimerInterval WRITE setTemperatureTimerInterval NOTIFY temperatureTimerIntervalChanged)
     Q_PROPERTY(int serialTimerInterval READ serialTimerInterval WRITE setSerialTimerInterval NOTIFY serialTimerIntervalChanged)
-    Q_PROPERTY(QStringList serialPorts READ serialPorts NOTIFY portsChanged)
     Q_PROPERTY(float percentagePrinted READ percentagePrinted NOTIFY printProgressChanged)
     Q_PROPERTY(QStringList portSpeeds READ portSpeeds CONSTANT)
     Q_PROPERTY(QString connectedPort READ connectedPort CONSTANT)
+
     Q_PROPERTY(AtCore::STATES state READ state WRITE setState NOTIFY stateChanged)
     Q_PROPERTY(bool sdMount READ isSdMounted WRITE setSdMounted NOTIFY sdMountChanged)
     Q_PROPERTY(QStringList sdFileList READ sdFileList NOTIFY sdCardFileListChanged)
+
     Q_PROPERTY(bool autoTemperatureReport READ autoTemperatureReport WRITE setAutoTemperatureReport NOTIFY autoTemperatureReportChanged)
     Q_PROPERTY(Temperature *temperature READ temperature CONSTANT)
-
     friend class AtCoreTests;
     // Add friends as Sd Card support is extended to more plugins.
     friend class RepetierPlugin;
@@ -88,6 +88,7 @@ class ATCORE_EXPORT AtCore : public QObject
 public:
 
     ServerPart *m_serverpart = nullptr;
+
 
     /**
      * @brief STATES enum Possible states the printer can be in
@@ -253,7 +254,10 @@ public:
      */
     bool autoTemperatureReport() const;
 
+
 signals:
+
+     void commandToclient( const QString &command);
 
     /**
      * @brief Message emit from atcore these should be displayed to the user for debug.
