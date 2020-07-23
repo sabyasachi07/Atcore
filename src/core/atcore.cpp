@@ -492,8 +492,6 @@ void AtCore::pushCommand(const QString &comm)
         processQueue();
     }
 
-    emit commandToclient(comm);
-
 }
 
 

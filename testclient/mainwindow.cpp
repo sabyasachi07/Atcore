@@ -477,22 +477,11 @@ void MainWindow::connectionType()
         if(client->getStatus())
         {
             setDangeriousDocksDisabled(false);
-            connect( core , &AtCore::commandToclient , client , &ClientStuff::sendCommand);
-
+          
         }
 
-    }
-   if(comboConnection->currentText() == tr("client"))
-   {
-      if(server->connectionEstablished())
-      {
-          connectPBClicked();
-          connect(server , &ServerPart::gotNewCommand , core ,&AtCore::pushCommand);
-      }
-
    }
-
-
+   
 }
 
 /**

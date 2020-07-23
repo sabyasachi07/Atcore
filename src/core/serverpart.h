@@ -31,16 +31,18 @@
 #include <QSslCertificate>
 #include <QSslSocket>
 #include "atcore_export.h"
+#include "atcore.h"
+
 
 class  ATCORE_EXPORT ServerPart :public QTcpServer
 {
     Q_OBJECT
 
 public:
-  ServerPart(QObject *parent = nullptr);
+  ServerPart(AtCore *core, QObject *parent = nullptr);
   bool connectionEstablished();
   void closeConnection();
-
+  QTcpSocket* client;
 
 
 signals :
@@ -55,9 +57,11 @@ public slots:
 
 private:
     quint16 m_nNextBlockSize;
+    AtCore *m_core;
     QSslKey key;
     QSslCertificate cert;
     bool status;
+
 
 protected:
     void incomingConnection(qintptr sslSocketDescriptor);

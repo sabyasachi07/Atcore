@@ -103,7 +103,6 @@ private:
     // Define max number of fans
     static int fanCount;
     ClientStuff *client = nullptr;
-    ServerPart *server = nullptr;
 
     void closeEvent(QCloseEvent *event) override;
     /**

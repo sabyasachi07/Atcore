@@ -257,8 +257,6 @@ public:
 
 signals:
 
-     void commandToclient( const QString &command);
-
     /**
      * @brief Message emit from atcore these should be displayed to the user for debug.
      *

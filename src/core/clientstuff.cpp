@@ -31,26 +31,28 @@
 Q_LOGGING_CATEGORY(ATCORE_CLIENT, "org.kde.atelier.core.client")
 
 
-ClientStuff::ClientStuff(QObject *parent):QObject(parent)
+ClientStuff::ClientStuff(QObject *parent):QObject(parent),m_nNextBlockSize(0)
 
 {
-    server = new QSslSocket;
+    client = new QSslSocket;
 
-    connect(server, &QSslSocket::disconnected, this, &ClientStuff::serverDisconnect);
+    connect(client, &QSslSocket::disconnected, this, &ClientStuff::serverDisconnect);
+    connect(client, &QSslSocket::readyRead, this, &ClientStuff::read);
 
-    connect(server, &QSslSocket::encryptedBytesWritten,this, &ClientStuff::encryptedBytesWritten);
-    connect(server,QOverload<const QList<QSslError> &>::of(&QSslSocket::sslErrors),this,&ClientStuff::sslErrors);
-    server->addCaCertificates(QStringLiteral("/home/trex108/code/server/server.crt"));
-    server->setPrivateKey(QStringLiteral("/home/trex108/code/client/client.key"));
-    server->setLocalCertificate(QStringLiteral("/home/trex108/code/client/client.crt"));
-    server->setPeerVerifyMode(QSslSocket::VerifyPeer);
-    server->setProtocol(QSsl::TlsV1SslV3);
+    connect(client, &QSslSocket::encryptedBytesWritten,this, &ClientStuff::encryptedBytesWritten);
+    connect(client,QOverload<const QList<QSslError> &>::of(&QSslSocket::sslErrors),this,&ClientStuff::sslErrors);
+    client->addCaCertificates(QStringLiteral("/home/trex108/code/server/server.crt"));
+
+    client->setPrivateKey(QStringLiteral("/home/trex108/code/client/client.key"));
+    client->setLocalCertificate(QStringLiteral("/home/trex108/code/client/client.crt"));
+    client->setPeerVerifyMode(QSslSocket::VerifyPeer);
+    client->setProtocol(QSsl::TlsV1SslV3);
 
 }
 void ClientStuff::connectToHost()
 {
-    server->connectToHostEncrypted(tr("127.0.0.1"),  38917);
-    if (server->waitForEncrypted(5000)) {
+    client->connectToHostEncrypted(tr("127.0.0.1"),  38917);
+    if (client->waitForEncrypted(5000)) {
 
        qCDebug(ATCORE_CLIENT) << (tr(" connected to server"));
        status = true;
@@ -59,7 +61,7 @@ void ClientStuff::connectToHost()
         qCDebug(ATCORE_CLIENT) << (tr("Unable to connect to server"));
         status = false;
 
-        exit(0);
+        return;
     }
 }
 
@@ -70,20 +72,22 @@ bool ClientStuff::getStatus()
 
 void ClientStuff ::encrypted()
 {
-    qCDebug(ATCORE_CLIENT) << tr("Encrypted") <<server;
-    if (!server)
+    qCDebug(ATCORE_CLIENT) << tr("Encrypted") <<client;
+    if (!client)
            return;
 }
 
 void ClientStuff ::encryptedBytesWritten(qint64 written)
 {
-    qCDebug(ATCORE_CLIENT) << tr("encryptedBytesWritten") << server << written;
+    qCDebug(ATCORE_CLIENT) << tr("encryptedBytesWritten") << client << written;
 }
+
+
 
 
 void ClientStuff::sslErrors(const QList<QSslError> &errors)
 {
-    foreach (const QSslError &error, errors)
+    for (const QSslError &error:errors)
         qCDebug(ATCORE_CLIENT) << error.errorString();
 }
 
@@ -91,8 +95,8 @@ void ClientStuff::serverDisconnect()
 {
 
    qCDebug(ATCORE_CLIENT)<< (tr("Server disconnected"));
-    server->deleteLater();
-    exit(0);
+    client->deleteLater();
+
 }
 
 
@@ -109,7 +113,7 @@ void ClientStuff::sendCommand(const QString &comm)
     out.device()->seek(0);
     out << quint16(arrBlock.size() - sizeof(quint16));
 
-    server->write(arrBlock);
+    client->write(arrBlock);
 
 
 
@@ -117,21 +121,47 @@ void ClientStuff::sendCommand(const QString &comm)
 
 void ClientStuff::closeConnection()
 {
-    disconnect(server, &QSslSocket::connected,0,0);
+    disconnect(client, &QSslSocket::connected,0,0);
 
 
-    switch (server->state())
+    switch (client->state())
     {
         case 0:
-            server->disconnectFromHost();
+            client->disconnectFromHost();
 
             break;
         case 2:
-            server->abort();
+            client->abort();
            break;
            default:
-            server->abort();
+            client->abort();
     }
 
  }
+
+void ClientStuff::read()
+{
+
+
+    QDataStream in(client);
+    while (client->bytesAvailable())
+
+
+    {
+        if (!m_nNextBlockSize)
+        {
+            if (client->bytesAvailable() < static_cast<qint64>(sizeof(quint16))) { break; }
+            in >> m_nNextBlockSize;
+        }
+
+        if (client->bytesAvailable() < m_nNextBlockSize) { break; }
+
+        QString str;
+        in >> str;
+
+
+
+        m_nNextBlockSize = 0;
+    }
+}
 

@@ -31,7 +31,7 @@
 
 Q_LOGGING_CATEGORY(ATCORE_SERVER, "org.kde.atelier.core.server")
 
-ServerPart::ServerPart(QObject *parent):QTcpServer(parent),m_nNextBlockSize(0)
+ServerPart::ServerPart(AtCore *core, QObject *parent):QTcpServer(parent),m_nNextBlockSize(0), m_core(core)
 {
 
     QFile keyFile(QStringLiteral("/home/trex108/code/server/server.key"));
@@ -45,6 +45,37 @@ ServerPart::ServerPart(QObject *parent):QTcpServer(parent),m_nNextBlockSize(0)
     certFile.open(QIODevice::ReadOnly);
     cert = QSslCertificate(certFile.readAll());
     certFile.close();
+   
+     //push the command to AtCore receive by client
+    connect(this , &ServerPart::gotNewCommand , m_core ,&AtCore::pushCommand);
+
+    //receiveing the commands from AtCore
+
+    connect(m_core, &AtCore::atcoreMessage, this , [this](const QString &msg){
+        sendToClient(client , msg);
+  });
+
+    connect(m_core, &AtCore::receivedMessage, this, [this](const QByteArray &message){
+
+       const QString command = QString::fromUtf8(message);
+       sendToClient(client , command);
+  });
+    connect(m_core, &AtCore::pushedCommand, this, [this](const QByteArray &message){
+
+        const QString command = QString::fromUtf8(message);
+        sendToClient(client , command);
+   });
+
+    //server will detect the port
+    connect(m_core, &AtCore::portsChanged, this, [this](const QStringList &ports){
+        sendToClient(client , ports.first());
+    });
+
+
+    /*connect(m_core, &AtCore::sdCardFileListChanged, this ,  [this](const QString &filelist){
+        sendToClient(client , filelist);
+});*/
+
 
 
 }
@@ -55,10 +86,11 @@ void ServerPart::startserver()
     if (!listen(QHostAddress::Any, 38917)){
         qCDebug(ATCORE_SERVER) << "Unable to start the TCP server";
         status = false;
-        exit(0);
+         return;
     } else {
       connect(this, &ServerPart::newConnection , this , &ServerPart::link);
       status = true;
+      //core->newConnection(port,baud,fwname);
       qCDebug(ATCORE_SERVER) << "Listening on " << serverAddress() << ":" << serverPort();    
     }
 }
@@ -105,7 +137,7 @@ void ServerPart::closeConnection()
 void ServerPart::sslErrors(const QList<QSslError> &errors)
 {
 
-foreach (const QSslError &error, errors)
+for (const QSslError &error: errors)
 qCDebug(ATCORE_SERVER)<< error.errorString();
 }
 
@@ -118,6 +150,8 @@ void ServerPart::link()
    connect(m_clientSocket, &QTcpSocket::readyRead, this, [this,m_clientSocket](){readClient(m_clientSocket);});
    connect(m_clientSocket, &QTcpSocket::disconnected, this, [this,m_clientSocket](){disconnectfromClient(m_clientSocket);});
    qCDebug(ATCORE_SERVER) << tr("connection established");
+   client = m_clientSocket;
+
 
 }
 
@@ -146,7 +180,25 @@ void ServerPart::readClient(QTcpSocket *m_clientSocket)
 void ServerPart::disconnectfromClient(QTcpSocket* m_clientSocket)
 {
    //here it will be disconnected
+
+
+
+
+
    qCDebug(ATCORE_SERVER) <<tr("client disconnected");
    m_clientSocket->deleteLater();
+}
+
+void ServerPart::sendToClient(QTcpSocket* socket, const QString& str)
+{
+    QByteArray arrBlock;
+    QDataStream out(&arrBlock, QIODevice::WriteOnly);
+
+    out << quint16(0) << str;
+
+    out.device()->seek(0);
+    out << quint16(arrBlock.size() - sizeof(quint16));
+
+     socket->write(arrBlock);
 }
 

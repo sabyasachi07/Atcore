@@ -40,8 +40,9 @@ public:
 
 
 private:
-    QSslSocket *server;
+    QSslSocket *client;
     bool status = false;
+    quint16 m_nNextBlockSize;
 
 
 private slots:
@@ -49,6 +50,7 @@ private slots:
     void serverDisconnect();
     void encrypted();
     void encryptedBytesWritten(qint64 written);
+    void read();
 
 };
 
