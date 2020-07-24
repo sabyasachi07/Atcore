@@ -42,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent)
     , core(new AtCore(this))
 {
     client = new ClientStuff(this);
-    server = new ServerPart(this);
+
     setWindowTitle(tr("AtCore - Test Client"));
     setWindowIcon(QIcon(QStringLiteral(":/icon/windowIcon")));
     QCoreApplication::setApplicationVersion(core->version());
