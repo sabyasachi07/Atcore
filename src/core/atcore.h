@@ -33,7 +33,7 @@
 #include "beddeform.h"
 #include "ifirmware.h"
 #include "temperature.h"
-#include "serverpart.h"
+
 
 class SerialLayer;
 class IFirmware;
@@ -87,7 +87,7 @@ class ATCORE_EXPORT AtCore : public QObject
 
 public:
 
-    ServerPart *m_serverpart = nullptr;
+
 
 
     /**

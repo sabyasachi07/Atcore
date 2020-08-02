@@ -610,7 +610,7 @@ void MainWindow::printerStateChanged(AtCore::STATES state)
         buttonConnect->setText(tr("Connect"));
         setConnectionWidgetsEnabled(true);
         setDangeriousDocksDisabled(true);
-        server->closeConnection();
+
         break;
 
     case AtCore::CONNECTING:
