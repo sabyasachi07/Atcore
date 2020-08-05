@@ -20,7 +20,6 @@ set(AtCoreLib_SRCS
     printthread.cpp
     seriallayer.cpp   
     temperature.cpp
-    serverpart.cpp
     clientstuff.cpp
 )
 
@@ -52,7 +51,6 @@ ecm_generate_headers(ATCORE_CamelCase_HEADERS
     MachineInfo
     SerialLayer
     Temperature
-    Serverpart
     Clientstuff
     REQUIRED_HEADERS ATCORE_HEADERS
 )
