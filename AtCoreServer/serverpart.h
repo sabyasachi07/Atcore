@@ -27,45 +27,36 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QObject>
-#include <QSslKey>
-#include <QSslCertificate>
-#include <QSslSocket>
 #include "atcore_export.h"
 #include "atcore.h"
-#include "serverconfig.h"
 
 
-class  ATCORE_EXPORT ServerPart :public QTcpServer
+class  ATCORE_EXPORT ServerPart :public QObject
 {
     Q_OBJECT
 
 public:
-  ServerPart(AtCore *core,ServerConfig *config, QObject *parent = nullptr);
+  ServerPart(AtCore *core, QObject *parent = nullptr);
   bool connectionEstablished();
   void closeConnection();
-  QTcpSocket* client;
+  QTcpSocket *client;
+  QTcpServer *server;
 
 
 signals :
     void gotNewCommand(const QString& str);
 
 public slots:
-    void sslErrors(const QList<QSslError> &errors);
     void link();
     void readClient(QTcpSocket* m_clientSocket);
     void disconnectfromClient(QTcpSocket* m_clientSocket);
-    void startserver();
     void sendToClient(QTcpSocket* socket, const QString& str);
-
+    void readyToreceiveCommand();
+    void connectRemotePb();
 
 private:
     uint16_t m_nNextBlockSize;
     AtCore *m_core;
-    ServerConfig *m_config;
-    QSslKey key;
-    QSslCertificate cert;
 
 
-protected:
-    void incomingConnection(qintptr sslSocketDescriptor);
 };

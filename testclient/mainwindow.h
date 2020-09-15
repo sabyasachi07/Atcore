@@ -34,7 +34,8 @@
 #include "sdwidget.h"
 #include "statuswidget.h"
 #include "temperaturewidget.h"
-#include "clientstuff.h"
+#include "atcoreclientloginwidget.h"
+#include "atcorenetworkclient.h"
 
 class SerialLayer;
 
@@ -98,11 +99,14 @@ private slots:
      */
     void updateAutoTemperatureReport(bool autoReport);
 
+    void sendLogincredentials();
+
 private:
     AtCore *core;
+
+    AtCoreNetworkClient *m_client;
     // Define max number of fans
     static int fanCount;
-    ClientStuff *client = nullptr;
 
     void closeEvent(QCloseEvent *event) override;
     /**
@@ -189,4 +193,9 @@ private:
     void makeProfileDock();
     QDockWidget *profileDock = nullptr;
     ProfileManager *profileManager = nullptr;
+
+    void makeAtCoreLoginWidgetDock();
+    QDockWidget *AtCoreLoginWidgetDock = nullptr;
+    AtCoreClientLoginWidget *loginwidget = nullptr;
+
 };

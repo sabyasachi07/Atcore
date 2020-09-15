@@ -1,5 +1,5 @@
 /* AtCore
-    Copyright (C) <2016>
+    Copyright (C) <2020>
 
     Authors:
         Tomaz Canabrava <tcanabrava@kde.org>
@@ -24,32 +24,47 @@
 */
 #pragma once
 
-#include <QSslSocket>
+
+#include <QHostAddress>
+#include <QTcpSocket>
 #include "atcore_export.h"
 
-class  ATCORE_EXPORT ClientStuff : public QObject
+class  ATCORE_EXPORT AtCoreNetworkClient : public QObject
 {
     Q_OBJECT
 
+
+signals:
+   void wrongPassword(bool value);
+
 public:
-    ClientStuff(QObject *parent = 0);
+    AtCoreNetworkClient(const QString hostAddress, int portVal, QObject *parent = NULL);
     void connectToHost();
     void sendCommand(const QString &comm);
     void closeConnection();
-    bool getStatus();
+    bool isConnected();
+
+
+
+
+
 
 
 private:
-    QSslSocket *client;
-    bool status = false;
-    quint16 m_nNextBlockSize;
+
+
+    QTcpSocket m_client;
+    bool connected = false;
+    uint16_t m_nNextBlockSize;
+    QString m_host;
+    int m_port;
+
+
+
 
 
 private slots:
-    void sslErrors(const QList<QSslError> &errors);
-    void serverDisconnect();
-    void encrypted();
-    void encryptedBytesWritten(qint64 written);
+
     void read();
 
 };

@@ -32,6 +32,7 @@
 #include "machineinfo.h"
 #include "mainwindow.h"
 #include "seriallayer.h"
+#include "atcorenetworkclientconfig.h"
 
 Q_LOGGING_CATEGORY(TESTCLIENT_MAINWINDOW, "org.kde.atelier.core")
 
@@ -41,8 +42,6 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , core(new AtCore(this))
 {
-    client = new ClientStuff(this);
-
     setWindowTitle(tr("AtCore - Test Client"));
     setWindowIcon(QIcon(QStringLiteral(":/icon/windowIcon")));
     QCoreApplication::setApplicationVersion(core->version());
@@ -68,6 +67,8 @@ MainWindow::MainWindow(QWidget *parent)
         profileDock->move(geometry().center());
         profileDock->activateWindow();
     }
+
+    m_client = new AtCoreNetworkClient(AtcoreNetworkClientConfig::instance()->readRemoteUserKey(comboProfile->currentText(), AtcoreNetworkClientConfig::USER::HOSTADDRESS).toString(),  AtcoreNetworkClientConfig::instance()->readRemoteUserKey(comboProfile->currentText(), AtcoreNetworkClientConfig::USER::PORT).toInt()) ;
 }
 
 void MainWindow::initMenu()
@@ -119,6 +120,7 @@ void MainWindow::initWidgets()
     makeTempControlsDock();
     makeSdDock();
     makeProfileDock();
+    makeAtCoreLoginWidgetDock();
 
     setDangeriousDocksDisabled(true);
 
@@ -133,6 +135,8 @@ void MainWindow::initWidgets()
     connectDock->raise();
 
     tabifyDockWidget(logDock, profileDock);
+    tabifyDockWidget(logDock, AtCoreLoginWidgetDock);
+
     logDock->raise();
     setCentralWidget(nullptr);
 
@@ -144,10 +148,16 @@ void MainWindow::initWidgets()
 void MainWindow::makeCommandDock()
 {
     commandWidget = new CommandWidget;
+
     // Connect the commandPressed signal
-    connect(commandWidget, &CommandWidget::commandPressed, [this](const QString &command) { core->pushCommand(command); });
+    connect(commandWidget, &CommandWidget::commandPressed, [this](const QString &command) {
+      core->pushCommand(command);
+      m_client->sendCommand(command);
+    });
     // Connect the messagePressed signal
-    connect(commandWidget, &CommandWidget::messagePressed, [this](const QString &message) { core->showMessage(message); });
+    connect(commandWidget, &CommandWidget::messagePressed, [this](const QString &message) { core->showMessage(message);
+    m_client->sendCommand( GCode::toCommand((GCode::MCommands::M117), message));
+    });
     // Create the dock, and set the Widget.
     commandDock = new QDockWidget(tr("Commands"), this);
     commandDock->setWidget(commandWidget);
@@ -286,12 +296,19 @@ void MainWindow::makeConnectDock()
     comboConnection = new QComboBox;
     comboConnection->addItem(tr("local"));
     comboConnection->addItem(tr("Host"));
-    comboConnection->addItem(tr("client"));
     auto *HBoxLayout = new QHBoxLayout;
     HBoxLayout->addWidget(newLabel);
     HBoxLayout->addWidget(comboConnection, 75);
     mainLayout->addLayout(HBoxLayout);
 
+    connect(comboConnection,&QComboBox::currentTextChanged, this , [this](const QString &currentText){
+        if(currentText == tr("Host"))
+        {
+             AtCoreLoginWidgetDock->setVisible(true);
+             const QPoint global = this->mapToGlobal(rect().center());
+             AtCoreLoginWidgetDock->move(global.x()-AtCoreLoginWidgetDock->width()/2, global.y()-AtCoreLoginWidgetDock->height()/2 );
+        }
+    });
     cbReset = new QCheckBox(tr("Attempt to stop Reset on connect"));
     if (MachineInfo::instance()->profileNames().isEmpty()) {
         cbReset->setHidden(true);
@@ -431,7 +448,26 @@ void MainWindow::closeEvent(QCloseEvent *event)
     core->close();
     event->accept();
 }
+void MainWindow::makeAtCoreLoginWidgetDock()
+{
+    AtCoreLoginWidgetDock = new QDockWidget(tr("Atcore Remote Login"), this);
+    loginwidget = new AtCoreClientLoginWidget();
+    AtCoreLoginWidgetDock->setWidget(loginwidget);
+    menuView->insertAction(nullptr,AtCoreLoginWidgetDock->toggleViewAction());
+    addDockWidget(Qt::TopDockWidgetArea,AtCoreLoginWidgetDock);
+    AtCoreLoginWidgetDock->setMinimumHeight(350);
+    AtCoreLoginWidgetDock->setMinimumWidth(350);
 
+    connect(loginwidget, &AtCoreClientLoginWidget::sendInfo, this , &MainWindow::sendLogincredentials);
+     //connect(m_client, &AtCoreNetworkClient::wrongPassword,loginwidget, &AtCoreClientLoginWidget::verifyPassword);
+    AtCoreLoginWidgetDock->setFloating(true);
+    AtCoreLoginWidgetDock->setVisible(false);
+
+
+
+
+
+}
 void MainWindow::checkTemperature(uint sensorType, uint number, float temp)
 {
     QString msg;
@@ -471,16 +507,17 @@ void MainWindow::connectionType()
     {
         connectPBClicked();
     }
-    if(comboConnection->currentText() == tr("Host"))
+    /*if(comboConnection->currentText() == tr("Host"))
     {
         client->connectToHost();
         if(client->getStatus())
         {
             setDangeriousDocksDisabled(false);
+
           
         }
 
-   }
+   }*/
    
 }
 
@@ -610,7 +647,6 @@ void MainWindow::printerStateChanged(AtCore::STATES state)
         buttonConnect->setText(tr("Connect"));
         setConnectionWidgetsEnabled(true);
         setDangeriousDocksDisabled(true);
-
         break;
 
     case AtCore::CONNECTING:
@@ -653,6 +689,8 @@ void MainWindow::toggleDockTitles(bool checked)
         sdDock->setTitleBarWidget(nullptr);
         delete profileDock->titleBarWidget();
         profileDock->setTitleBarWidget(nullptr);
+        delete AtCoreLoginWidgetDock->titleBarWidget();
+        AtCoreLoginWidgetDock->setTitleBarWidget(nullptr);
     } else {
         if (!connectDock->isFloating()) {
             connectDock->setTitleBarWidget(new QWidget());
@@ -680,6 +718,9 @@ void MainWindow::toggleDockTitles(bool checked)
         }
         if (!profileDock->isFloating()) {
             profileDock->setTitleBarWidget(new QWidget());
+        }
+        if(!AtCoreLoginWidgetDock->isFloating()) {
+            AtCoreLoginWidgetDock->setTitleBarWidget(new QWidget());
         }
     }
 }
@@ -732,4 +773,11 @@ void MainWindow::updateAutoTemperatureReport(bool autoReport)
             }
         });
     }
+}
+
+void MainWindow::sendLogincredentials()
+{
+  m_client->connectToHost();
+  m_client->sendCommand(loginwidget->m_password);
+
 }

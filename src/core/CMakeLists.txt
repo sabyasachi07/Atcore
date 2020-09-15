@@ -20,8 +20,10 @@ set(AtCoreLib_SRCS
     printthread.cpp
     seriallayer.cpp   
     temperature.cpp
-    clientstuff.cpp
-)
+    serverpart.cpp
+    atcorenetworkclient.cpp
+    atcorenetworkclientconfig.cpp
+ )
 
 add_library(AtCore SHARED ${AtCoreLib_SRCS})
 target_link_libraries(AtCore Qt5::Core Qt5::SerialPort Qt5::Quick Qt5::Network)
@@ -42,6 +44,7 @@ set_target_properties(AtCore PROPERTIES VERSION ${ATCORE_VERSION_STRING}
 )
 
 
+
 ecm_generate_headers(ATCORE_CamelCase_HEADERS
     HEADER_NAMES
     AtCore
@@ -51,7 +54,9 @@ ecm_generate_headers(ATCORE_CamelCase_HEADERS
     MachineInfo
     SerialLayer
     Temperature
-    Clientstuff
+    Serverpart
+    AtCoreNetworkClient
+    AtcoreNetworkClientConfig
     REQUIRED_HEADERS ATCORE_HEADERS
 )
 

@@ -4,15 +4,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 find_package(Qt5 REQUIRED COMPONENTS
     Network
 )
-add_definitions(
-        -DSERVER_KEY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../key/server.key"
-        -DSERVER_CRT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../key/server.crt"
-        -DCLIENT_CRT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../key/client.crt"
-        -DCLIENT_KEY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../key/client.key"
-)
+
 
 set(AtCoreServer_SRCS
-    serverconfig.cpp
+    atcorehostauthorization.cpp
     serverpart.cpp
 )
 

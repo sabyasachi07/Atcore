@@ -11,6 +11,8 @@ set(widgetsLIB_SRCS
     statuswidget.cpp
     temperaturewidget.cpp
     profilemanager.cpp
+    atcoreclientloginwidget.cpp
+
 )
 
 add_library(AtCoreWidgets ${widgetsLIB_SRCS})
@@ -52,6 +54,7 @@ ecm_generate_headers(ATCOREWIDGETS_CamelCase_HEADERS
     StatusWidget
     TemperatureWidget
     ProfileManager
+    AtCoreClientLoginWidget
     REQUIRED_HEADERS ATCOREWIDGETS_HEADERS
 )
 

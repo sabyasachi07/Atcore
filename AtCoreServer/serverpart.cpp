@@ -28,122 +28,37 @@
 #include <QFile>
 #include <QDataStream>
 #include "serverpart.h"
-
 Q_LOGGING_CATEGORY(ATCORE_SERVER, "org.kde.atelier.core.server")
 
-ServerPart::ServerPart(AtCore *core,ServerConfig *config, QObject *parent):QTcpServer(parent),m_nNextBlockSize(0), m_core(core),m_config(config)
+ServerPart::ServerPart(AtCore *core, QObject *parent):QObject(parent),m_nNextBlockSize(0), m_core(core)
 {
-
-    QFile keyFile(m_config->ServerPrivateKey());
-    keyFile.open(QIODevice::ReadOnly);
-    key = QSslKey(keyFile.readAll(), QSsl::Rsa );
-    keyFile.close();
-
-
-
-    QFile certFile(m_config->ServerPublicKey());
-    certFile.open(QIODevice::ReadOnly);
-    cert = QSslCertificate(certFile.readAll());
-    certFile.close();
-
-     //push the command to AtCore receive by client
-    connect(this , &ServerPart::gotNewCommand , m_core ,&AtCore::pushCommand);
-
-    //receiveing the commands from AtCore
-
-    connect(m_core, &AtCore::atcoreMessage, this , [this](const QString &msg){
-        sendToClient(client , msg);
-  });
-
-    connect(m_core, &AtCore::receivedMessage, this, [this](const QByteArray &message){
-
-       const QString command = QString::fromUtf8(message);
-       sendToClient(client , command);
-  });
-    connect(m_core, &AtCore::pushedCommand, this, [this](const QByteArray &message){
-
-        const QString command = QString::fromUtf8(message);
-        sendToClient(client , command);
-   });
-
-    //server will detect the port
-    connect(m_core, &AtCore::portsChanged, this, [this](const QStringList &ports){
-        sendToClient(client , ports.first());
-    });
-
-
-    /*connect(m_core, &AtCore::sdCardFileListChanged, this ,  [this](const QString &filelist){
-        sendToClient(client , filelist);
-});*/
 
 
 
 }
-
-void ServerPart::startserver()
-{
-
-    if (!listen(QHostAddress::Any, m_config->getPort())){
-        qCDebug(ATCORE_SERVER) << "Unable to start the TCP server";
-      } else {
-      connect(this, &ServerPart::newConnection , this , &ServerPart::link);
-      //core->newConnection(port,baud,fwname);
-      qCDebug(ATCORE_SERVER) << "Listening on " << serverAddress() << ":" << serverPort();
-    }
-}
-
-void ServerPart::incomingConnection(qintptr sslSocketDescriptor)
-{
-
-
-QSslSocket *sslSocket = new QSslSocket(this);
-
-connect(sslSocket,QOverload<const QList<QSslError> &>::of(&QSslSocket::sslErrors),this,&ServerPart::sslErrors);
-sslSocket->setSocketDescriptor(sslSocketDescriptor);
-sslSocket->setLocalCertificate(cert);
-sslSocket->setPrivateKey(key);
-sslSocket->addCaCertificates(m_config->ClientPublicKey());
-sslSocket->setPeerVerifyMode(QSslSocket::VerifyPeer);
-sslSocket->setProtocol(QSsl::TlsV1SslV3);
-sslSocket->startServerEncryption();
-
-
-
-addPendingConnection(sslSocket);
-}
-
 
 void ServerPart::closeConnection()
 {
-   if(isListening())
+   if(server->isListening())
    {
-      disconnect(this, &ServerPart::newConnection , this , &ServerPart::link);
-       close();
+      disconnect(server, &QTcpServer::newConnection , this , &ServerPart::link);
+       server->close();
 
    }
    qCDebug(ATCORE_SERVER) << "Server stopped, port is closed";
 }
 
 
-void ServerPart::sslErrors(const QList<QSslError> &errors)
-{
-
-for (const QSslError &error: errors)
-{
-qCDebug(ATCORE_SERVER)<< error.errorString();
-}
-
-}
 void ServerPart::link()
 {
 
 
-   QTcpSocket *m_clientSocket = nextPendingConnection();
-
-   connect(m_clientSocket, &QTcpSocket::readyRead, this, [this,m_clientSocket](){readClient(m_clientSocket);});
-   connect(m_clientSocket, &QTcpSocket::disconnected, this, [this,m_clientSocket](){disconnectfromClient(m_clientSocket);});
+   QTcpSocket *clientSocket = server->nextPendingConnection();
+   connect(clientSocket, &QTcpSocket::disconnected, clientSocket, &QTcpSocket::deleteLater);
+   connect(clientSocket, &QTcpSocket::readyRead, this, [this,clientSocket](){readClient(clientSocket);});
+   connect(clientSocket, &QTcpSocket::disconnected, this, [this,clientSocket](){disconnectfromClient(clientSocket);});
    qCDebug(ATCORE_SERVER) << "connection established";
-   client = m_clientSocket;
+   client = clientSocket;
 
 
 }
@@ -152,7 +67,7 @@ void ServerPart::readClient(QTcpSocket *m_clientSocket)
 {
 //here ssslSocket willl read from the client
   QDataStream in(m_clientSocket);
-  while(m_clientSocket->bytesAvailable()){
+   for (;;){
        if(!m_nNextBlockSize){
             if (m_clientSocket->bytesAvailable() <  static_cast<qint64>(sizeof(quint16))) { break; }
         in >> m_nNextBlockSize;
@@ -160,9 +75,8 @@ void ServerPart::readClient(QTcpSocket *m_clientSocket)
         if (m_clientSocket->bytesAvailable() < m_nNextBlockSize) { break; }
         QString str;
         in >> str;
-        m_nNextBlockSize = 0;
-        //emit gotNewCommand(str);
-        qCDebug(ATCORE_SERVER) << str;
+        m_nNextBlockSize=0;
+        //qCDebug(ATCORE_SERVER) << str;
         emit gotNewCommand(str);
 
 
@@ -172,12 +86,7 @@ void ServerPart::readClient(QTcpSocket *m_clientSocket)
 
 void ServerPart::disconnectfromClient(QTcpSocket* m_clientSocket)
 {
-   //here it will be disconnected
-
-
-
-
-
+   //here it will be disconnect
    qCDebug(ATCORE_SERVER) << "client disconnected";
    m_clientSocket->deleteLater();
 }
@@ -192,6 +101,51 @@ void ServerPart::sendToClient(QTcpSocket* socket, const QString& str)
     out.device()->seek(0);
     out << uint16_t(arrBlock.size() - sizeof(uint16_t));
 
-     socket->write(arrBlock);
+    socket->write(arrBlock);
+}
+
+void ServerPart::readyToreceiveCommand()
+{
+
+    server = new QTcpServer(this);
+
+
+
+    //push the command to AtCore receive by client
+   connect(this , &ServerPart::gotNewCommand , m_core ,&AtCore::pushCommand);
+
+   //receiveing the commands from AtCore
+
+   connect(m_core, &AtCore::atcoreMessage, this , [this](const QString &msg){
+       sendToClient(client , msg);
+ });
+
+   connect(m_core, &AtCore::receivedMessage, this, [this](const QByteArray &message){
+
+      const QString command = QString::fromUtf8(message);
+      sendToClient(client , command);
+ });
+   connect(m_core, &AtCore::pushedCommand, this, [this](const QByteArray &message){
+
+       const QString command = QString::fromUtf8(message);
+       sendToClient(client , command);
+  });
+
+   //server will detect the port
+   connect(m_core, &AtCore::portsChanged, this, [this](const QStringList &ports){
+       sendToClient(client , ports.first());
+   });
+
+
+   /*connect(m_core, &AtCore::sdCardFileListChanged, this ,  [this](const QString &filelist){
+       sendToClient(client , filelist);
+});*/
+
+}
+
+void ServerPart::connectRemotePb()
+{
+
+
 }
 
