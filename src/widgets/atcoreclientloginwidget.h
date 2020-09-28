@@ -5,6 +5,8 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QGroupBox>
+
 #include <QSpinBox>
 #include <QWidget>
 
@@ -21,7 +23,7 @@ signals:
 public:
     AtCoreClientLoginWidget(QWidget *parent = nullptr);
 
-    void RemoteUserLoginEditing();
+    void RemoteUserLoginEditing(const QString &text);
 
     void loadProfile(const QString &profileName);
 
@@ -36,10 +38,12 @@ public:
 
  private:
     QComboBox *ComboUserName = nullptr;
+    QLineEdit *lineName = nullptr;
     QLineEdit *LineUserPassword = nullptr;
     QLineEdit *LineHostName = nullptr;
     QLineEdit *LinePort = nullptr;
     QPushButton *LogInbutton = nullptr;
+    QGroupBox *groupBox = nullptr;
     bool m_verified;
 
 

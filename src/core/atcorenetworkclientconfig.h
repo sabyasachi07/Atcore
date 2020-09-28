@@ -25,10 +25,11 @@ public:
 
 
     enum class USER {
-         NAME = 0,       //!< User Name
+         PROFILE = 0,
+         NAME ,        //!< User Name
          PASSWORD,        //!< User Password
          HOSTADDRESS,     //!< Remote Host Address
-         PORT,          //!< Port Value
+         PORT,            //!< Port Value
      };
      Q_ENUM(USER)
 
@@ -42,8 +43,6 @@ public:
 
     void storeProfile(const QVariantMap &profile) const;
 
-    void setCurrentUserName(const QString &profile);
-    QString getCurrentUsername();
     QStringList UserName();
 
 

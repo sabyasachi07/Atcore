@@ -2,10 +2,11 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-const QMap<AtcoreNetworkClientConfig::USER, AtcoreNetworkClientConfig::userKeyInfo> AtcoreNetworkClientConfig::clientDecoderMap = {{USER::NAME, {QStringLiteral("userName"), QStringLiteral("remoteProfileName")}},
-                                                                                                                                          {USER::PASSWORD, {QStringLiteral("Password"), QString() }},
+const QMap<AtcoreNetworkClientConfig::USER, AtcoreNetworkClientConfig::userKeyInfo> AtcoreNetworkClientConfig::clientDecoderMap = {{USER::PROFILE, {QStringLiteral("profilename"), QStringLiteral("name")}},
+                                                                                                                                          {USER::NAME, {QStringLiteral("username"), QString()}},
+                                                                                                                                          {USER::PASSWORD, {QStringLiteral("Password"), QString()}},
                                                                                                                                           {USER::HOSTADDRESS, {QStringLiteral("Hostaddress"), QStringLiteral("0.0.0.0")}},
-                                                                                                                                          {USER::PORT, {QStringLiteral("Port"), 80}}};
+                                                                                                                                          {USER::PORT, {QStringLiteral("Port"), 38917}}};
 
 
 
@@ -46,7 +47,7 @@ QVariant AtcoreNetworkClientConfig::readRemoteUserKey(const QString &profileName
         return clientDecoderMap[key].defaultValue;
    }
 
-    if (key == USER::NAME) {
+    if (key == USER::PROFILE) {
         return profileName;
     }
 
@@ -64,11 +65,11 @@ void AtcoreNetworkClientConfig::StoreRemoteUserInfo(const QMap<AtcoreNetworkClie
 {
 
 
-    m_AtCoreNetworkSettings->beginGroup(profile[USER::NAME].toString());
+    m_AtCoreNetworkSettings->beginGroup(profile[USER::PROFILE].toString());
 
 
 
-   for (int i = 1; i < clientDecoderMap.size(); i++) {
+   for (int i = 0; i < clientDecoderMap.size(); i++) {
        m_AtCoreNetworkSettings->setValue(clientDecoderMap[AtcoreNetworkClientConfig::USER(i)].name, profile[AtcoreNetworkClientConfig::USER(i)]);
 
    }
@@ -89,15 +90,7 @@ void AtcoreNetworkClientConfig::storeProfile(const QVariantMap &profile) const
 
 }
 
-void AtcoreNetworkClientConfig::setCurrentUserName(const QString &profile)
-{
-    m_UserName = profile;
-}
 
-QString AtcoreNetworkClientConfig::getCurrentUsername()
-{
-    return m_UserName;
-}
 
 QStringList AtcoreNetworkClientConfig::UserName()
 {

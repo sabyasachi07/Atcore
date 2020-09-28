@@ -1,58 +1,68 @@
 #include <atcoreclientloginwidget.h>
-#include "machineinfo.h"
-#include "atcorenetworkclientconfig.h"
-
 #include <QLabel>
 #include <QLineEdit>
 #include <QDebug>
 #include <QMessageBox>
-
+#include <QCompleter>
+#include "machineinfo.h"
+#include "atcorenetworkclientconfig.h"
 
 AtCoreClientLoginWidget::AtCoreClientLoginWidget(QWidget *parent):QWidget(parent)
 {
 
     auto newHLayout = new QHBoxLayout();
 
-    auto LoginWidgetLayout = new QVBoxLayout();
+    auto loginwidgetlayout = new QVBoxLayout();
+    auto boxLayout = new QVBoxLayout();
 
 
-    auto newLabel = new QLabel(tr("ComboUserName:"));
+    auto newLabel = new QLabel(tr("Profile"));
     ComboUserName = new QComboBox();
-
     ComboUserName->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     ComboUserName->addItems(MachineInfo::instance()->profileNames());
 
 
-       connect(MachineInfo::instance(), &MachineInfo::profilesChanged, this, [this] {
+
+    connect(MachineInfo::instance(), &MachineInfo::profilesChanged, this, [this] {
         int index = ComboUserName->currentIndex();
         ComboUserName->clear();
         ComboUserName->addItems(MachineInfo::instance()->profileNames());
         ComboUserName->setCurrentIndex(std::min<int>(index, ComboUserName->count() - 1));
     });
 
-       connect(ComboUserName, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this] {
-           if (AtcoreNetworkClientConfig::instance()->UserName().contains(ComboUserName->currentText())) {
-               loadProfile(ComboUserName->currentText());
-               AtcoreNetworkClientConfig::instance()->setCurrentUserName(ComboUserName->currentText());
-           }
-       });
-
+    connect(ComboUserName, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this] {
+        if (AtcoreNetworkClientConfig::instance()->UserName().contains(ComboUserName->currentText())) {
+            loadProfile(ComboUserName->currentText());
+        }
+    });
+    connect(ComboUserName ,static_cast<void(QComboBox::*)(const QString &)>(&QComboBox::activated),[this](const QString &text){ RemoteUserLoginEditing(text); });
     newHLayout->addWidget(newLabel);
     newHLayout->addWidget(ComboUserName);
-    LoginWidgetLayout->addLayout(newHLayout);
+    loginwidgetlayout->addLayout(newHLayout);
+
+    newHLayout = new QHBoxLayout();
+    newLabel = new QLabel(tr("Username"));
+    lineName = new QLineEdit();
+    connect(lineName, &QLineEdit::editingFinished, this , [this] {
+
+         QString name = lineName->text();
+        AtcoreNetworkClientConfig::instance()->storeRemoteUserKey(ComboUserName->currentText(), AtcoreNetworkClientConfig::USER::NAME, name);
+    });
+    newHLayout->addWidget(newLabel);
+    newHLayout->addWidget(lineName,75);
+    boxLayout->addLayout(newHLayout);
 
 
     newHLayout = new QHBoxLayout();
     newLabel = new QLabel(tr("Password"));
     LineUserPassword = new QLineEdit();
-    connect(LineUserPassword, &QLineEdit::editingFinished, this , [this] {
-         m_password = LineUserPassword->text();
-    });
+    LineUserPassword->setEchoMode(QLineEdit::Password);
+    connect(LineUserPassword, &QLineEdit::editingFinished, this , [this] { AtcoreNetworkClientConfig::instance()->storeRemoteUserKey(ComboUserName->currentText(), AtcoreNetworkClientConfig::USER::PASSWORD, LineUserPassword->text()); });
 
 
     newHLayout->addWidget(newLabel);
     newHLayout->addWidget(LineUserPassword,75);
-    LoginWidgetLayout->addLayout(newHLayout);
+    boxLayout->addLayout(newHLayout);
 
 
     newHLayout = new QHBoxLayout();
@@ -67,69 +77,73 @@ AtCoreClientLoginWidget::AtCoreClientLoginWidget(QWidget *parent):QWidget(parent
 
     newHLayout->addWidget(newLabel);
     newHLayout->addWidget(LineHostName,75);
-    LoginWidgetLayout->addLayout(newHLayout);
+    boxLayout->addLayout(newHLayout);
 
     newHLayout = new QHBoxLayout();
     newLabel = new QLabel(tr("Port"));
     LinePort = new QLineEdit();
-    LinePort->setValidator(new QIntValidator(22,64345,this));
+    LinePort->setValidator(new QIntValidator(22,32767,this));
     connect(LinePort, &QLineEdit::editingFinished, this , [this] {
 
-         quint16  portValue = LineHostName->text().toInt();
-         AtcoreNetworkClientConfig::instance()->storeRemoteUserKey(ComboUserName->currentText(), AtcoreNetworkClientConfig::USER::PORT, portValue);
+        qint16 portValue = LinePort->text().toUShort();
+        AtcoreNetworkClientConfig::instance()->storeRemoteUserKey(ComboUserName->currentText(), AtcoreNetworkClientConfig::USER::PORT, portValue);
 
     });
 
     newHLayout->addWidget(newLabel);
     newHLayout->addWidget(LinePort,75);
-    LoginWidgetLayout->addLayout(newHLayout);
+    boxLayout->addLayout(newHLayout);
 
 
     newHLayout = new QHBoxLayout();
     LogInbutton = new QPushButton(tr("Log In"));
     newHLayout->addWidget(LogInbutton);
-    LoginWidgetLayout->addLayout(newHLayout);
+
 
     connect(LogInbutton, &QPushButton::clicked,this, [this]{
-    if(LineHostName->text().isEmpty()||LinePort->text().isEmpty()||LineUserPassword->text().isEmpty()){
-      qDebug()<< tr("fill first");
-      LogInbutton->setEnabled(false);
-     }
-    else{
+        if(LineHostName->text().isEmpty()||LinePort->text().isEmpty()||LineUserPassword->text().isEmpty()){
+            qDebug()<< tr("fill first");
+            LogInbutton->setEnabled(false);
+        }
+        else{
 
-     sendInfo();
-    }
+            groupBox->hide();
+            sendInfo();
+        }
 
     });
 
-    setLayout(LoginWidgetLayout);
-    RemoteUserLoginEditing();
+    groupBox = new QGroupBox(tr("Profile"));
+    groupBox->setLayout(boxLayout);
+    loginwidgetlayout->addWidget(groupBox);
+    loginwidgetlayout->addLayout(newHLayout);
+
+    setLayout(loginwidgetlayout);
     loadProfile(ComboUserName->currentText());
-    AtcoreNetworkClientConfig::instance()->setCurrentUserName(ComboUserName->currentText());
+
 
 }
 
-void AtCoreClientLoginWidget::RemoteUserLoginEditing()
+void AtCoreClientLoginWidget::RemoteUserLoginEditing(const QString &text)
 {
-    if (MachineInfo::instance()->profileNames().contains(ComboUserName->currentText())) {
-        loadProfile(ComboUserName->currentText());
-
-
+    if (AtcoreNetworkClientConfig::instance()->UserName().contains(text)) {
+        loadProfile(text);
         return;
     }
-    QMap< AtcoreNetworkClientConfig::USER, QVariant> newRemoteuserProfile = {{AtcoreNetworkClientConfig::USER::NAME , ComboUserName->currentText()},
+    QMap< AtcoreNetworkClientConfig::USER, QVariant> newRemoteuserProfile = {{AtcoreNetworkClientConfig::USER::PROFILE, ComboUserName->currentText()},
 
-    {AtcoreNetworkClientConfig::USER::PASSWORD , LineUserPassword->text()},
+                                                                             {AtcoreNetworkClientConfig::USER::NAME , lineName->text()},
 
-    {AtcoreNetworkClientConfig::USER::HOSTADDRESS , LineHostName->text()},
+                                                                             {AtcoreNetworkClientConfig::USER::PASSWORD , LineUserPassword->text()},
 
-    {AtcoreNetworkClientConfig::USER::PORT , LinePort->text()}};
+                                                                             {AtcoreNetworkClientConfig::USER::HOSTADDRESS , LineHostName->text()},
+
+                                                                             {AtcoreNetworkClientConfig::USER::PORT , LinePort->text()}};
 
 
     AtcoreNetworkClientConfig::instance()->StoreRemoteUserInfo(newRemoteuserProfile);
 
-
-   loadProfile(newRemoteuserProfile[AtcoreNetworkClientConfig::USER::NAME].toString());
+    loadProfile(newRemoteuserProfile[AtcoreNetworkClientConfig::USER::PROFILE].toString());
 
 }
 
@@ -141,8 +155,11 @@ void AtCoreClientLoginWidget::loadProfile(const QString &profileName)
 
 
     blockSignals(true);
+    lineName->setText(AtcoreNetworkClientConfig::instance()->readRemoteUserKey(profileName, AtcoreNetworkClientConfig::USER::NAME).toString());
+    LineUserPassword->setText(AtcoreNetworkClientConfig::instance()->readRemoteUserKey(profileName, AtcoreNetworkClientConfig::USER::PASSWORD).toString());
     LineHostName->setText(AtcoreNetworkClientConfig::instance()->readRemoteUserKey(profileName, AtcoreNetworkClientConfig::USER::HOSTADDRESS).toString());
     LinePort->setText(AtcoreNetworkClientConfig::instance()->readRemoteUserKey(profileName, AtcoreNetworkClientConfig::USER::PORT).toString());
+
     blockSignals(false);
 
 }

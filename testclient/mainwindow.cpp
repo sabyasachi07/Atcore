@@ -57,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(core, &AtCore::portsChanged, this, &MainWindow::locateSerialPort);
     connect(core, &AtCore::sdCardFileListChanged, sdWidget, &SdWidget::updateFilelist);
     connect(core, &AtCore::autoTemperatureReportChanged, this, &MainWindow::updateAutoTemperatureReport);
+    connect(m_client, &AtCoreNetworkClient::getCommandfromserver , this , &MainWindow::commandsfromServer);
 
     comboPort->setFocus(Qt::OtherFocusReason);
 
@@ -320,7 +321,6 @@ void MainWindow::makeConnectDock()
     connect(comboProfile, &QComboBox::currentTextChanged, this, [this](const QString &currentText) {
         cbReset->setHidden(MachineInfo::instance()->readKey(currentText, MachineInfo::KEY::FIRMWARE).toString().contains(QStringLiteral("Auto-Detect")));
     });
-
     buttonConnect = new QPushButton(tr("Connect"));
     connect(buttonConnect, &QPushButton::clicked, this, &MainWindow::connectionType);
 
@@ -333,6 +333,7 @@ void MainWindow::makeConnectDock()
     });
 
     mainLayout->addWidget(buttonConnect);
+    host = new AtCoreHostAuthorization(core);
 
     auto *dockContents = new QWidget;
     dockContents->setLayout(mainLayout);
@@ -455,11 +456,18 @@ void MainWindow::makeAtCoreLoginWidgetDock()
     AtCoreLoginWidgetDock->setWidget(loginwidget);
     menuView->insertAction(nullptr,AtCoreLoginWidgetDock->toggleViewAction());
     addDockWidget(Qt::TopDockWidgetArea,AtCoreLoginWidgetDock);
-    AtCoreLoginWidgetDock->setMinimumHeight(350);
+    AtCoreLoginWidgetDock->setMinimumHeight(300);
     AtCoreLoginWidgetDock->setMinimumWidth(350);
 
-    connect(loginwidget, &AtCoreClientLoginWidget::sendInfo, this , &MainWindow::sendLogincredentials);
-     //connect(m_client, &AtCoreNetworkClient::wrongPassword,loginwidget, &AtCoreClientLoginWidget::verifyPassword);
+   /* connect(loginwidget, &AtCoreClientLoginWidget::sendInfo, this , [this]{
+        sendLogincredentials();
+        loginwidget->adjustSize();
+
+
+    });*/
+
+
+
     AtCoreLoginWidgetDock->setFloating(true);
     AtCoreLoginWidgetDock->setVisible(false);
 
@@ -501,23 +509,46 @@ void MainWindow::checkTemperature(uint sensorType, uint number, float temp)
     logWidget->appendLog(msg);
 }
 
+void MainWindow::commandsfromServer(const QString &comm)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
 void MainWindow::connectionType()
 {
     if(comboConnection->currentText() == tr("local"))
     {
         connectPBClicked();
     }
-    /*if(comboConnection->currentText() == tr("Host"))
+    if(comboConnection->currentText() == tr("Host"))
     {
-        client->connectToHost();
-        if(client->getStatus())
-        {
-            setDangeriousDocksDisabled(false);
+      m_client->sendCommand(QVariant::fromValue(AtCore::CONNECTING).toString());
 
-          
-        }
-
-   }*/
+    }
    
 }
 
@@ -604,6 +635,7 @@ void MainWindow::printPBClicked()
 void MainWindow::printerStateChanged(AtCore::STATES state)
 {
     QString stateString;
+
     switch (state) {
     case AtCore::IDLE:
         if (connectionTimer->isActive()) {
@@ -778,6 +810,6 @@ void MainWindow::updateAutoTemperatureReport(bool autoReport)
 void MainWindow::sendLogincredentials()
 {
   m_client->connectToHost();
-  m_client->sendCommand(loginwidget->m_password);
+  //m_client->sendCommand(loginwidget->m_password);
 
 }
